@@ -1,27 +1,57 @@
-#include <iostream>
+﻿#include <iostream>
 #include <vector>
 #include <algorithm>
+#include <fstream>
+#include <stdlib.h>
+#include <string>
+#include <cmath>
+#include <cstdlib>
+#include <ctime>
 
-#define V 5
+typedef std::vector< std::vector<int> > Matrix;
+typedef std::vector<int> Row;
 
-double dystans(int graph[][V], int vertex1, int vertex2) {
+void generate() {
+	std::srand((std::time(nullptr)));
+	int n;
+	std::cout << "wpisz ile chcesz wierzchołków " << std::endl;
+	std::cin >> n;
+	std::cout << std::endl;
+	std::ofstream zapis("in.txt");
+	zapis << n << std::endl;
+	for (int i = 1; i < n + 1; i++) {
+		zapis << i <<" " << (std::rand() % 100) * 100 << " " << (std::rand() % 100) * 100 << std::endl;
+	}
+}
+
+int calculate(int x1, int x2, int y1, int y2)
+{
+	int wynik;
+	wynik = std::sqrt(std::pow(x2 - x1, 2) + std::pow(y2 - y1, 2));
+	return wynik;
+}
+
+//stała ilość wierzchołków
+//#define V 5
+
+double dystans(int n, Matrix graph, int vertex1, int vertex2) {
 	return graph[vertex1][vertex2];
 }
 
-void TSP_choose_shortest(int matrix_graph[][V]) {
+void TSP_choose_shortest(int n, Matrix matrix_graph) {
 	//tworze dwa wektory, pierwszy to trasa, drugi to flaga na wierzcholki
 	std::vector<int> trasa;
-	std::vector<bool> visited(V, false);
+	std::vector<bool> visited(n, false);
 	//wybieram miasto poczatkowe
 	int currentVertex = 0;
 	visited[currentVertex] = true;
 	trasa.push_back(currentVertex);
-	
-	for (int i = 1; i < V; i++) {
+
+	for (int i = 1; i < n; i++) {
 		int nextVertex = -1;
 		//to jest dziwne, ustawiam aktualny najmniejszy dystans na najwieksza wartosc inta
 		int minimalnyDystans = std::numeric_limits<int>::max();
-		for (int j = 0; j < V; j++) {
+		for (int j = 0; j < n; j++) {
 			if (matrix_graph[currentVertex][j] < minimalnyDystans && !visited[j]) {
 				minimalnyDystans = matrix_graph[currentVertex][j];
 				nextVertex = j;
@@ -40,23 +70,129 @@ void TSP_choose_shortest(int matrix_graph[][V]) {
 	double dystans_value = 0.0;
 	for (int i = 0; i < trasa.size() - 1; i++) {
 		//std::cout << "krok: " << dystans(matrix_graph, trasa[i], trasa[i + 1]) << std::endl;
-		dystans_value += dystans(matrix_graph, trasa[i], trasa[i + 1]);
+		dystans_value += dystans(n, matrix_graph, trasa[i], trasa[i + 1]);
 	}
 	std::cout << "dystans w sumie to: " << dystans_value << std::endl;
+
 }
 
-
-
 int main() {
-	
-	/*reprezentacja w postaci macierzy grafu, ale zamiast zapisywa� 0/1 zapisujemy odleg�o�� miedzy wierzcholkami, jesli taka krawedz je laczaca istnieje*/
-	int graph[][V] = {
-		{0,304,304,403,280},
-		{304,0,341,584,486},
-		{304,341,0,299,341},
-		{403,584,299,0,344},
-		{280,486,341,344,0}
-	};
-	TSP_choose_shortest(graph);
+
+	int wybor;
+	std::cout << "Jesli masz plik, wybierz 1, jesli nie, wybierz 2, skonczyc 3 " << std::endl;
+	std::cin >> wybor;
+	std::cout << std::endl;
+	bool koniec = true;
+	while (koniec != false)
+	{
+
+		switch (wybor)
+		{
+		case 1:
+		{
+
+			//to jest otwarcie pliku
+			std::ifstream odczyt("in.txt");
+			std::string linia;
+			//tu chodzi tylko o to, że ta pierwsza linia jest inna, więc chce ją od razu przerzucić do zmiennej i zapomnieć o jej iostnieniu
+			getline(odczyt, linia);
+			int V = stoi(linia);
+			if (V < 1) {
+				break;
+			}
+			//tu robię sobie vektor vektorów -> czyli macierz
+
+
+			const size_t N = 3; //macierz jest zawsze szeroka na 3 i wysoka na 2
+			Matrix matrix;
+			std::string s;
+			std::vector<int> ciag;
+			//tu zaczynają się jaja
+			//tworze vector intów do którego wpycham wszystkie wartości po pierwszej linii z pliku
+			int integer;
+			//to slice'uje mi wszystko po spacji, ale nie ogarnia do końca konceptu entera, później to się ogarnie
+			while (getline(odczyt, s, ' ')) {
+				integer = stoi(s);
+				ciag.push_back(integer);
+			}
+			/*
+			//nie ma po co tego drukować
+			for (size_t i = 0; i < ciag.size(); i++) {
+			}*/
+			//std::cout << ciag.size();
+
+			//tu zaczynają się jaja^2
+			//counter - liczy mi który rzecz z vectora ciag powinna byc teraz dodana do macierzy
+			int counter = 0;
+			for (int i = 0; i < V; ++i)
+			{
+				//dodawać będziemy całe wiersze od razu
+				Row row(V);
+				//konstrukcja wiersza to LP, X, Y, jako że nasza funkcja slice'owania nie wie jak działa enter, wpiszemy LP ręcznie XD
+				row[0] = i + 1;
+				//tutaj dodaje X i Y, po to jest mi counter żeby wiedział które one mają miejsca w vektorze ciag
+				for (size_t j = 1; j < N; ++j)
+				{
+					//row[j] = odczyt.get();
+
+					int temp = ciag[counter];
+					row[j] = temp;
+					counter++;
+
+				}
+
+				matrix.push_back(row); //pushuje wiersze do tabeli
+			}
+			//no i mam macierz, która działa, uwaga uwaga, jak macierz
+
+			//zaczynamy liczyć 
+			//potrzebujemy macierzy sąsiedztwa
+			//uwaga uwaga - nie mamy macierzy sąsiedztwa
+			Matrix neighbour_matrix;
+			Row n_row;
+			for (int i = 0; i < V; ++i)
+			{
+				Row n_row(V);
+				for (size_t j = 0; j < V; ++j)
+				{
+					if (i != j) {
+						n_row[j] = calculate(matrix[i][1], matrix[i][2], matrix[j][1], matrix[j][2]);
+					}
+				}
+
+				neighbour_matrix.push_back(n_row);
+			}
+			/*
+			for (size_t i = 0; i < V; ++i)
+			{
+				for (size_t j = 0; j < V; ++j)
+				{
+					std::cout << neighbour_matrix[i][j] << " ";
+				}
+
+				std::cout << std::endl;
+			}*/
+			TSP_choose_shortest(V, neighbour_matrix);
+			wybor = 3;
+			break;
+		}
+		case 2:
+		{
+			generate();
+			wybor = 3;
+			break;
+		}
+		case 3:
+		{
+			koniec = false;
+			break;
+		}
+		default:
+		{
+			wybor = 3;
+			break;
+		}
+		}
+	}
 	return 0;
 }
